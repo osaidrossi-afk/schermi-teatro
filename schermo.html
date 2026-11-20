@@ -23,25 +23,33 @@
 <script src="rete.js"></script>
 <script>
 // Monitor di un palchetto: mostra la slide decisa dal telecomando, nello stesso istante degli altri schermi.
+// Finché nessuno ha messo in onda una presentazione, lo schermo resta nero.
 var PROVA = /[?&]prova=1/.test(location.search);
-var deck = null, stato = null, sveglia = null;
-var livelli = [document.getElementById('a'), document.getElementById('b')], sopra = 0, mostrata = -1, pronta = {};
+var stato = null, deck = null, sveglia = null, caricando = null;
+var livelli = [document.getElementById('a'), document.getElementById('b')], sopra = 0, mostrata = -1;
 var neroEl = document.getElementById('nero'), provaEl = document.getElementById('prova');
 if (PROVA) provaEl.style.display = 'block';
 
-function url(i) { return deck.slide[i] + '?v=' + encodeURIComponent(deck.versione); }
+function url(i) { return SLIDE.immagine(deck, 'm', i); }
 
-function caricaDeck() {
-  return fetch('presentazione.json?s=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
-    deck = d; pronta = {};
-    // tutte le slide scaricate subito: al momento del cambio sono già in memoria
-    d.slide.forEach(function (s, i) { var im = new Image(); im.src = url(i); });
+// una presentazione nuova: tutte le slide scaricate subito, così al momento del cambio sono già in memoria
+function caricaDeck(d) {
+  var pronte = [];
+  for (var i = 0; i < d.n; i++) {
+    pronte.push(new Promise(function (ok) {
+      var im = new Image(); im.onload = im.onerror = ok; im.src = SLIDE.immagine(d, 'm', i);
+    }));
+  }
+  // si passa alla presentazione nuova appena è scaricata la prima slide; le altre arrivano intanto
+  return pronte[0].then(function () {
+    deck = d; mostrata = -1;
+    livelli.forEach(function (l) { l.dataset.i = ''; });
   });
 }
 
 // prepara la slide i nel livello nascosto: quando arriva l'istante del cambio basta scambiare i livelli
 function prepara(i) {
-  if (!deck || i < 0 || i >= deck.slide.length) return;
+  if (!deck || i < 0 || i >= deck.n) return;
   var sotto = livelli[1 - sopra];
   if (sotto.dataset.i === String(i)) return;
   sotto.dataset.i = String(i); sotto.src = url(i);
@@ -49,25 +57,31 @@ function prepara(i) {
 }
 
 function mostra(i) {
-  if (i === mostrata) return;
+  if (!deck || i === mostrata) return;
   var sotto = livelli[1 - sopra];
   if (sotto.dataset.i !== String(i)) { sotto.dataset.i = String(i); sotto.src = url(i); }
   sotto.classList.add('su'); livelli[sopra].classList.remove('su'); sopra = 1 - sopra;
   mostrata = i;
-  prepara(Math.min(i + 1, deck.slide.length - 1));
+  prepara(Math.min(i + 1, deck.n - 1));
   vivo();
 }
 
 function aggiorna() {
   clearTimeout(sveglia);
-  if (!deck) return;
+  if (!stato || !stato.deck) { livelli.forEach(function (l) { l.classList.remove('su'); }); scriviProva(); return; }
+  if (!deck || deck.id !== stato.deck.id) {          // presentazione cambiata: prima si scarica, poi si mostra
+    var d = stato.deck;
+    if (caricando === d.id) return;
+    caricando = d.id;
+    caricaDeck(d).then(function () { caricando = null; if (stato.deck && stato.deck.id === d.id) aggiorna(); });
+    return;
+  }
   var t = ora();
-  mostra(SLIDE.indice(stato, deck.slide.length, t));
+  mostra(SLIDE.indice(stato, t));
   neroEl.classList.toggle('su', SLIDE.nero(stato, t));
   var prossimo = SLIDE.prossimoCambio(stato, t);
   if (prossimo !== null) {
-    // la slide che arriverà dopo si prepara in anticipo
-    if (stato) prepara(SLIDE.indice(stato, deck.slide.length, prossimo + 1));
+    prepara(SLIDE.indice(stato, prossimo + 1));        // la slide che arriverà dopo si prepara in anticipo
     sveglia = setTimeout(aggiorna, Math.max(0, prossimo - ora()));
   }
   scriviProva();
@@ -75,14 +89,14 @@ function aggiorna() {
 
 function scriviProva() {
   if (!PROVA) return;
-  provaEl.textContent = 'slide ' + (mostrata + 1) + '/' + (deck ? deck.slide.length : '?') + ' · ' +
-    (stato ? (stato.modo === 'auto' ? 'automatico ' + stato.durata + ' s' : 'a mano') : 'in attesa') +
+  provaEl.textContent = (deck ? '«' + deck.titolo + '» slide ' + (mostrata + 1) + '/' + deck.n : 'nessuna presentazione') + ' · ' +
+    (stato && stato.deck ? (stato.modo === 'auto' ? 'automatico ' + stato.durata + ' s' : 'a mano') : 'in attesa') +
     ' · ' + (RETE.collegato() ? 'collegato' : 'NON collegato') + ' · orologio ' + Math.round(scarto) + ' ms';
 }
 
 var ultimoVivo = 0;
 function vivo() {           // ogni schermo dice ogni tanto che è acceso: il telecomando conta quanti sono
-  if (RETE.manda({ k: 'vivo', slide: mostrata, ver: deck ? deck.versione : '' }, 'vivo', false)) ultimoVivo = Date.now();
+  if (RETE.manda({ k: 'vivo', ruolo: 'monitor', slide: mostrata, deck: deck ? deck.id : '' }, 'vivo', false)) ultimoVivo = Date.now();
 }
 setInterval(function () { if (Date.now() - ultimoVivo > 20000) vivo(); scriviProva(); }, 5000);
 
@@ -92,17 +106,13 @@ RETE.ascolta(function (m) {
   if (m.k === 'chi') { setTimeout(vivo, Math.random() * 2000); return; }
   if (m.k !== 'stato') return;
   if (stato && m.rev <= stato.rev) return;               // una copia vecchia arrivata in ritardo da un altro server
-  var cambioDeck = deck && m.versione && m.versione !== deck.versione;
-  stato = m;
-  if (cambioDeck) caricaDeck().then(aggiorna); else aggiorna();
+  stato = m; aggiorna();
 });
 
-caricaDeck().then(function () {
-  aggiorna();
-  RETE.collega();
-  sincronizza().then(aggiorna);
-  setInterval(function () { sincronizza().then(aggiorna); }, 10 * 60 * 1000);
-});
+aggiorna();
+RETE.collega();
+sincronizza().then(aggiorna);
+setInterval(function () { sincronizza().then(aggiorna); }, 10 * 60 * 1000);
 </script>
 </body>
 </html>

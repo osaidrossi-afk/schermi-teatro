@@ -1,0 +1,5 @@
+# creati dal ponte sul PC dove gira: non vanno pubblicati
+ponte/presentazioni/
+ponte/impostazioni.json
+# file di prova
+*.pdf

@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<meta name="robots" content="noindex, nofollow">
+<title>Telecomando schermi · Teatro Nazionale Firenze</title>
+<style>
+  :root {
+    --fondo: #111214; --pannello: #1b1d21; --bordo: #2c2f35; --testo: #eceae6; --tenue: #9a9ca3;
+    --oro: #c9a45c; --oro-scuro: #8a6d33; --verde: #3fb27f; --rosso: #e05a4f; --giallo: #d9b44a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--testo); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { padding: 12px 16px calc(28px + env(safe-area-inset-bottom)); max-width: 1100px; margin: 0 auto; touch-action: manipulation; }
+  header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  h1 { font-size: 18px; margin: 0; font-weight: 650; }
+  .sotto { color: var(--tenue); font-size: 13px; margin-top: 2px; }
+  .stato { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; background: var(--pannello); border: 1px solid var(--bordo); color: var(--tenue); white-space: nowrap; }
+  .pill.ok { color: var(--verde); border-color: rgba(63,178,127,.4); }
+  .pill.ko { color: var(--rosso); border-color: rgba(224,90,79,.5); }
+  .pill.attesa { color: var(--giallo); border-color: rgba(217,180,74,.45); }
+
+  .vuoto { background: var(--pannello); border: 1px dashed var(--bordo); border-radius: 12px; padding: 28px 16px; text-align: center; color: var(--tenue); }
+  .anteprime { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .riquadro { background: var(--pannello); border: 1px solid var(--bordo); border-radius: 12px; padding: 10px; }
+  .etichetta { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--tenue); margin-bottom: 6px; display: flex; justify-content: space-between; gap: 8px; }
+  .etichetta b { color: var(--testo); font-weight: 600; }
+  .immagine { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+  .immagine img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .velo { position: absolute; inset: 0; background: #000; display: none; align-items: center; justify-content: center; color: var(--tenue); font-size: 14px; }
+  .velo.su { display: flex; }
+  .in-onda { color: var(--rosso); font-weight: 700; }
+
+  .comandi { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; margin: 12px 0; }
+  button, .bottone { font: inherit; color: var(--testo); background: var(--pannello); border: 1px solid var(--bordo); border-radius: 12px; padding: 12px 12px; cursor: pointer; }
+  button:active { transform: scale(.98); }
+  button:disabled { opacity: .45; cursor: default; transform: none; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+  .grande { font-size: 22px; font-weight: 700; padding: 22px 10px; }
+  .avanti { background: var(--oro); border-color: var(--oro); color: #1a1408; }
+  .nero-attivo { background: #000; border-color: var(--rosso); color: var(--rosso); }
+  .primario { background: var(--oro); border-color: var(--oro); color: #1a1408; font-weight: 650; }
+  .pericolo { color: var(--rosso); }
+
+  .modo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .segmenti { display: inline-flex; border: 1px solid var(--bordo); border-radius: 10px; overflow: hidden; }
+  .segmenti button { border: 0; border-radius: 0; padding: 10px 14px; background: transparent; }
+  .segmenti button.scelto { background: var(--oro-scuro); color: #fff; }
+  label { color: var(--tenue); font-size: 14px; }
+  .modo label { display: inline-flex; align-items: center; gap: 6px; }
+  input[type=number], input[type=text], input[type=email], input[type=password] {
+    font: inherit; color: var(--testo); background: var(--fondo); border: 1px solid var(--bordo); border-radius: 8px; padding: 9px 10px; }
+  .modo input { width: 72px; }
+  .nota { color: var(--tenue); font-size: 13px; margin: 8px 0 0; }
+
+  .griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 10px; }
+  .miniatura { padding: 0; overflow: hidden; border-radius: 8px; position: relative; aspect-ratio: 16 / 9; background: #000; }
+  .miniatura img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .miniatura span { position: absolute; left: 6px; top: 4px; font-size: 12px; font-weight: 700; background: rgba(0,0,0,.6); padding: 1px 6px; border-radius: 6px; }
+  .miniatura.attuale { outline: 3px solid var(--rosso); outline-offset: -3px; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--tenue); font-size: 14px; padding: 4px 0; }
+
+  /* gestione (riservata) */
+  .gestione { margin-top: 18px; border-top: 1px solid var(--bordo); padding-top: 10px; }
+  .modulo { display: grid; gap: 10px; max-width: 420px; margin-top: 10px; }
+  .modulo input { width: 100%; }
+  .carica { display: grid; gap: 10px; margin-top: 12px; }
+  .zona { border: 2px dashed var(--bordo); border-radius: 12px; padding: 22px 14px; text-align: center; color: var(--tenue); cursor: pointer; }
+  .zona.sopra { border-color: var(--oro); color: var(--testo); }
+  progress { width: 100%; height: 10px; accent-color: var(--oro); }
+  .elenco { display: grid; gap: 8px; margin-top: 12px; }
+  .voce { display: grid; grid-template-columns: 96px 1fr auto; gap: 10px; align-items: center; background: var(--fondo); border: 1px solid var(--bordo); border-radius: 10px; padding: 8px; }
+  .voce img { width: 96px; aspect-ratio: 16/9; object-fit: contain; background: #000; border-radius: 6px; }
+  .voce .titolo { font-weight: 600; }
+  .voce .azioni { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .voce .azioni button { padding: 8px 10px; font-size: 14px; }
+  .voce.onda { border-color: var(--rosso); }
+  .messaggio { font-size: 14px; color: var(--tenue); }
+  .messaggio.errore { color: var(--rosso); }
+  [hidden] { display: none !important; }
+  @media (max-width: 640px) {
+    .anteprime { grid-template-columns: 1fr; }
+    .anteprime .riquadro:last-child { display: none; }
+    .grande { font-size: 20px; padding: 26px 8px; }
+    .voce { grid-template-columns: 72px 1fr; }
+    .voce img { width: 72px; }
+    .voce .azioni { grid-column: 1 / -1; justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Telecomando schermi</h1>
+    <div class="sotto" id="titolo">LEDwall e monitor dei palchetti</div>
+  </div>
+  <div class="stato">
+    <span class="pill" id="rete">collegamento…</span>
+    <span class="pill" id="ledwall" title="Il programma che comanda la LEDwall">LEDwall: –</span>
+    <span class="pill" id="schermi">monitor: –</span>
+  </div>
+</header>
+
+<div class="vuoto" id="nessuna" hidden>Nessuna presentazione in onda.<br>Quando il teatro la mette in onda, compare qui.</div>
+
+<main id="regia" hidden>
+  <section class="anteprime">
+    <div class="riquadro">
+      <div class="etichetta"><span class="in-onda">● In onda</span><b id="numero">–</b></div>
+      <div class="immagine"><img id="ora" alt="Slide in onda"><div class="velo" id="velo">Schermi neri</div></div>
+    </div>
+    <div class="riquadro">
+      <div class="etichetta"><span>Prossima</span><b id="numeroDopo">–</b></div>
+      <div class="immagine"><img id="dopo" alt="Slide successiva"></div>
+    </div>
+  </section>
+
+  <section class="comandi">
+    <button class="grande" id="indietro" aria-label="Slide precedente">◀</button>
+    <button class="grande avanti" id="avanti">Avanti ▶</button>
+    <button class="grande" id="nero">Nero</button>
+  </section>
+
+  <section class="riquadro">
+    <div class="modo">
+      <div class="segmenti" role="group" aria-label="Modalità">
+        <button id="modoMano" class="scelto">A mano</button>
+        <button id="modoAuto">Automatico</button>
+      </div>
+      <label>secondi per slide <input id="durata" type="number" min="2" max="600" step="1" value="8"></label>
+    </div>
+    <p class="nota" id="spiega"></p>
+  </section>
+
+  <details>
+    <summary>Tutte le slide (tocca per andare a quella)</summary>
+    <div class="griglia" id="griglia"></div>
+  </details>
+</main>
+
+<section class="gestione">
+  <details id="apriGestione">
+    <summary>Gestione (riservata al teatro)</summary>
+
+    <form class="modulo" id="accesso" hidden>
+      <label>Email <input type="email" id="email" autocomplete="username" required></label>
+      <label>Password <input type="password" id="password" autocomplete="current-password" required></label>
+      <button class="primario" type="submit">Accedi</button>
+      <div class="messaggio" id="msgAccesso"></div>
+    </form>
+
+    <div id="areaGestione" hidden>
+      <div class="messaggio" id="chiSei"></div>
+      <div class="carica">
+        <label class="zona" id="zona" for="file">
+          <b>Carica una presentazione</b><br>
+          PDF oppure immagini (JPG, PNG). Tocca qui o trascina il file.<br>
+          <span style="font-size:13px">PowerPoint, Keynote, Canva, Google Slides: prima salva o scarica come PDF.</span>
+          <input type="file" id="file" accept="application/pdf,image/*,.pptx,.ppt,.key,.odp" multiple hidden>
+        </label>
+        <label>Nome della presentazione <input type="text" id="nomeDeck" placeholder="es. Convegno Rossi 12 dicembre"></label>
+        <button class="primario" id="avviaCarica" disabled>Prepara e carica</button>
+        <progress id="avanzamento" max="1" value="0" hidden></progress>
+        <div class="messaggio" id="msgCarica"></div>
+      </div>
+      <h3 style="font-size:15px;margin:18px 0 0">Presentazioni caricate</h3>
+      <div class="elenco" id="elenco"></div>
+      <p class="nota">«Metti in onda» cambia subito tutti gli schermi. La LEDwall ci mette qualche secondo in più: scarica le slide in alta risoluzione.</p>
+      <button id="esci" style="margin-top:8px">Esci</button>
+    </div>
+  </details>
+</section>
+
+<script src="rete.js"></script>
+<script>
+// ===================== TELECOMANDO =====================
+// Decide lo stato e lo manda a tutti. Gli schermi cambiano slide tutti nello stesso istante, «anticipo»
+// millisecondi dopo il tocco: il tempo perché il messaggio arrivi a tutti prima del cambio.
+var ANTICIPO = parseInt((location.search.match(/[?&]anticipo=(\d+)/) || [])[1] || '350', 10);
+var stato = null, sveglia = null, schermi = {}, ponte = null;
+var $ = function (id) { return document.getElementById(id); };
+
+function deck() { return stato && stato.deck ? stato.deck : null; }
+function n() { return SLIDE.numero(stato); }
+function adesso() { return SLIDE.indice(stato, ora()); }
+
+function base() {           // lo stato di partenza per una modifica: quello attuale, con un numero di versione nuovo
+  var t = ora(), s = {};
+  if (stato) Object.keys(stato).forEach(function (k) { if (['id', 'da', 'argomento'].indexOf(k) < 0) s[k] = stato[k]; });
+  s.k = 'stato'; s.rev = t;
+  if (!s.modo) { s.modo = 'mano'; s.slide = 0; s.prima = 0; s.quando = 0; }
+  return s;
+}
+function manda(s) { RETE.manda(s, 'stato', true); }
+
+function vai(i) {
+  if (!deck()) return;
+  i = Math.max(0, Math.min(n() - 1, i));
+  var s = base(), t = s.rev, att = adesso();
+  delete s.inizio; delete s.durata; delete s.parti;
+  s.modo = 'mano'; s.prima = att; s.slide = i; s.quando = t + ANTICIPO;
+  manda(s);
+}
+function avanti() { vai(adesso() + 1); }
+function indietro() { vai(adesso() - 1); }
+function nero() {
+  if (!deck()) return;
+  var s = base(), t = s.rev, era = SLIDE.nero(stato, t);
+  s.neroPrima = era; s.nero = !era; s.neroQuando = t + ANTICIPO;
+  manda(s);
+}
+function automatico() {
+  if (!deck()) return;
+  var sec = Math.max(2, Math.min(600, parseInt($('durata').value, 10) || 8));
+  $('durata').value = sec;
+  var s = base(), t = s.rev, att = adesso();
+  s.modo = 'auto'; s.prima = att; s.parti = att; s.inizio = t + ANTICIPO; s.durata = sec;
+  manda(s);
+}
+function aMano() { if (stato && stato.modo === 'auto') vai(adesso()); }
+
+// mette in onda una presentazione: tutti gli schermi passano alla sua prima slide
+function mettiInOnda(d) {
+  var s = base();
+  delete s.inizio; delete s.durata; delete s.parti;
+  s.deck = { id: d.id, n: d.n, base: d.base, titolo: d.titolo };
+  s.modo = 'mano'; s.slide = 0; s.prima = 0; s.quando = 0; s.nero = false; s.neroPrima = false; s.neroQuando = 0;
+  manda(s);
+}
+
+// ---------- disegno ----------
+var deckDisegnato = null;
+function disegna() {
+  clearTimeout(sveglia);
+  var d = deck();
+  $('nessuna').hidden = !!d; $('regia').hidden = !d;
+  $('titolo').textContent = d ? d.titolo : 'LEDwall e monitor dei palchetti';
+  if (!d) return;
+  if (deckDisegnato !== d.id) { deckDisegnato = d.id; griglia(d); }
+  var t = ora(), i = SLIDE.indice(stato, t), dopo = Math.min(i + 1, n() - 1);
+  if ($('ora').dataset.k !== d.id + i) { $('ora').src = SLIDE.immagine(d, 'm', i); $('ora').dataset.k = d.id + i; }
+  if ($('dopo').dataset.k !== d.id + dopo) { $('dopo').src = SLIDE.immagine(d, 'm', dopo); $('dopo').dataset.k = d.id + dopo; }
+  $('numero').textContent = (i + 1) + ' / ' + n();
+  $('numeroDopo').textContent = (i + 1 < n()) ? (dopo + 1) + ' / ' + n() : 'fine';
+  var neroSu = SLIDE.nero(stato, t);
+  $('velo').classList.toggle('su', neroSu);
+  $('nero').classList.toggle('nero-attivo', neroSu);
+  $('nero').textContent = neroSu ? 'Riaccendi' : 'Nero';
+  var auto = stato.modo === 'auto';
+  $('modoAuto').classList.toggle('scelto', auto);
+  $('modoMano').classList.toggle('scelto', !auto);
+  $('spiega').textContent = auto
+    ? 'Automatico: una slide ogni ' + stato.durata + ' secondi, in giro. Premi «Avanti», «◀» o una miniatura per riprendere il controllo a mano.'
+    : 'A mano: ogni «Avanti» cambia la LEDwall e tutti i monitor insieme. Funzionano anche le frecce, la barra spaziatrice e il telecomando da presentazione.';
+  if (auto && document.activeElement !== $('durata')) $('durata').value = stato.durata;
+  Array.prototype.forEach.call($('griglia').children, function (b, k) { b.classList.toggle('attuale', k === i); });
+  var p = SLIDE.prossimoCambio(stato, t);
+  if (p !== null) sveglia = setTimeout(disegna, Math.max(0, p - ora()));
+  segnaInOnda();
+}
+
+function griglia(d) {
+  var g = $('griglia'); g.innerHTML = '';
+  for (var i = 0; i < d.n; i++) (function (i) {
+    var b = document.createElement('button');
+    b.className = 'miniatura'; b.setAttribute('aria-label', 'Vai alla slide ' + (i + 1));
+    b.innerHTML = '<img loading="lazy" alt=""><span>' + (i + 1) + '</span>';
+    b.querySelector('img').src = SLIDE.immagine(d, 't', i);
+    b.onclick = function () { vai(i); };
+    g.appendChild(b);
+    new Image().src = SLIDE.immagine(d, 'm', i);       // le anteprime grandi pronte in memoria
+  })(i);
+}
+
+var chiesto = false;
+function aggiornaStato() {
+  var ok = RETE.collegato();
+  if (ok && !chiesto) chiesto = RETE.manda({ k: 'chi' }, 'vivo', false);   // appena collegati: chi è acceso?
+  $('rete').textContent = ok ? 'collegato' : 'non collegato';
+  $('rete').className = 'pill ' + (ok ? 'ok' : 'ko');
+  var limite = Date.now() - 45000, quanti = 0;
+  Object.keys(schermi).forEach(function (k) { if (schermi[k] > limite) quanti++; else delete schermi[k]; });
+  $('schermi').textContent = 'monitor accesi: ' + quanti;
+  var l = $('ledwall');
+  if (!ponte || ponte.visto < limite) { l.textContent = 'LEDwall: non collegata'; l.className = 'pill ko'; }
+  else if (deck() && ponte.deck !== deck().id) { l.textContent = 'LEDwall: carica le slide…'; l.className = 'pill attesa'; }
+  else if (ponte.errore) { l.textContent = 'LEDwall: ' + ponte.errore; l.className = 'pill ko'; }
+  else { l.textContent = 'LEDwall: collegata'; l.className = 'pill ok'; }
+}
+
+RETE.ascolta(function (m) {
+  if (m.k === 'vivo') {
+    if (m.ruolo === 'ledwall') ponte = { visto: Date.now(), deck: m.deck, errore: m.errore || '' };
+    else if (m.ruolo === 'monitor') schermi[m.da] = Date.now();
+    return;
+  }
+  if (m.k !== 'stato') return;
+  if (stato && m.rev <= stato.rev) return;
+  stato = m; disegna();
+});
+
+$('avanti').onclick = avanti;
+$('indietro').onclick = indietro;
+$('nero').onclick = nero;
+$('modoAuto').onclick = automatico;
+$('modoMano').onclick = aMano;
+$('durata').onchange = function () { if (stato && stato.modo === 'auto') automatico(); };
+document.addEventListener('keydown', function (e) {
+  if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+  var k = e.key;
+  if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'ArrowDown') { e.preventDefault(); avanti(); }
+  else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'ArrowUp') { e.preventDefault(); indietro(); }
+  else if (k === 'b' || k === 'B' || k === '.') { e.preventDefault(); nero(); }
+  else if (k === 'Home') { e.preventDefault(); vai(0); }
+  else if (k === 'End') { e.preventDefault(); vai(n() - 1); }
+});
+function tieniAcceso() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {} }
+document.addEventListener('visibilitychange', function () { if (!document.hidden) tieniAcceso(); });
+tieniAcceso();
+
+disegna();
+RETE.collega();
+sincronizza().then(disegna);
+setInterval(function () { sincronizza().then(disegna); }, 10 * 60 * 1000);
+setInterval(aggiornaStato, 1000);
+
+// ===================== GESTIONE (riservata) =====================
+// Accesso con l'utente della piattaforma del teatro. I file vengono convertiti qui nel browser (PDF e immagini)
+// e salvati nello spazio «schermi» della piattaforma: caricare e cancellare può solo chi è autorizzato.
+var SUPABASE_URL = 'https://fcarfyibyhmgpvxdwxvl.supabase.co';
+var SUPABASE_KEY = 'sb_publishable_Q4d6rxfR-VnNOf1mZmHSLw_nvwG8ohC';   // chiave pubblica: da sola non permette di caricare
+var PUBBLICO = SUPABASE_URL + '/storage/v1/object/public/schermi/';
+var MISURE = { l: [4224, 4320], m: [1920, 1080], t: [480, 270] };     // LEDwall, monitor, miniature
+var MAX_PIXEL = 16000000;   // i telefoni non disegnano immagini più grandi di così
+var db = null, file = [];
+
+function caricaScript(src) {
+  return new Promise(function (ok, ko) { var s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+}
+function preparaDb() {
+  if (db) return Promise.resolve(db);
+  return caricaScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js').then(function () {
+    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, storageKey: 'schermi-accesso' } });
+    return db;
+  });
+}
+
+$('apriGestione').addEventListener('toggle', function () {
+  if (!this.open) return;
+  preparaDb().then(function () { return db.auth.getSession(); }).then(function (r) { mostraGestione(r.data.session); })
+    .catch(function () { $('accesso').hidden = false; $('msgAccesso').textContent = 'Non riesco a collegarmi alla piattaforma. Riprova tra poco.'; });
+});
+function mostraGestione(sessione) {
+  $('accesso').hidden = !!sessione; $('areaGestione').hidden = !sessione;
+  if (sessione) { $('chiSei').textContent = 'Accesso: ' + sessione.user.email; elenca(); }
+}
+$('accesso').onsubmit = function (e) {
+  e.preventDefault();
+  $('msgAccesso').textContent = 'Accesso in corso…'; $('msgAccesso').className = 'messaggio';
+  db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value }).then(function (r) {
+    if (r.error) { $('msgAccesso').textContent = 'Email o password non corretti.'; $('msgAccesso').className = 'messaggio errore'; return; }
+    $('password').value = ''; $('msgAccesso').textContent = ''; mostraGestione(r.data.session);
+  });
+};
+$('esci').onclick = function () { db.auth.signOut().then(function () { mostraGestione(null); }); };
+
+// ---------- scelta dei file ----------
+function scegli(lista) {
+  file = Array.prototype.slice.call(lista || []);
+  var msg = $('msgCarica'); msg.className = 'messaggio';
+  var ppt = file.filter(function (f) { return /\.(pptx?|key|odp)$/i.test(f.name); });
+  if (ppt.length) {
+    file = [];
+    msg.className = 'messaggio errore';
+    msg.innerHTML = 'I file PowerPoint/Keynote vanno prima salvati in PDF. PowerPoint: <b>File → Esporta → PDF</b>. Keynote: <b>Archivio → Esporta → PDF</b>. Canva e Google Slides: <b>Scarica → PDF</b>. Poi carica il PDF qui.';
+  } else if (file.some(function (f) { return f.type === 'application/pdf'; }) && file.length > 1) {
+    file = []; msg.className = 'messaggio errore'; msg.textContent = 'Carica un PDF alla volta (oppure solo immagini).';
+  } else if (file.length) {
+    if (file[0].type !== 'application/pdf') file.sort(function (a, b) { return a.name.localeCompare(b.name, 'it', { numeric: true }); });
+    msg.textContent = file.length === 1 ? file[0].name : file.length + ' immagini, in ordine di nome';
+    if (!$('nomeDeck').value) $('nomeDeck').value = file[0].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ');
+  }
+  $('avviaCarica').disabled = !file.length;
+}
+$('file').onchange = function () { scegli(this.files); };
+['dragenter', 'dragover'].forEach(function (ev) { $('zona').addEventListener(ev, function (e) { e.preventDefault(); this.classList.add('sopra'); }); });
+['dragleave', 'drop'].forEach(function (ev) { $('zona').addEventListener(ev, function (e) { e.preventDefault(); this.classList.remove('sopra'); }); });
+$('zona').addEventListener('drop', function (e) { scegli(e.dataTransfer.files); });
+
+// ---------- conversione: ogni pagina diventa tre immagini (LEDwall, monitor, miniatura) ----------
+function misura(w, h, box) {             // la slide intera dentro il riquadro, senza deformarla
+  var s = Math.min(box[0] / w, box[1] / h);
+  if (w * h * s * s > MAX_PIXEL) s = Math.sqrt(MAX_PIXEL / (w * h));
+  return [Math.max(1, Math.round(w * s)), Math.max(1, Math.round(h * s))];
+}
+function jpeg(canvas, qualita) { return new Promise(function (ok) { canvas.toBlob(ok, 'image/jpeg', qualita); }); }
+function riduci(sorgente, box, qualita) {
+  var d = misura(sorgente.width, sorgente.height, box), c = document.createElement('canvas');
+  c.width = d[0]; c.height = d[1];
+  var x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(sorgente, 0, 0, d[0], d[1]);
+  return jpeg(c, qualita);
+}
+// restituisce un elenco di funzioni: ognuna disegna una pagina in un canvas grande (misura LEDwall)
+function pagine() {
+  if (file[0].type === 'application/pdf') {
+    return caricaScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js').then(function () {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      return file[0].arrayBuffer();
+    }).then(function (buf) { return pdfjsLib.getDocument({ data: buf }).promise; }).then(function (pdf) {
+      var f = [];
+      for (var p = 1; p <= pdf.numPages; p++) (function (p) {
+        f.push(function () {
+          return pdf.getPage(p).then(function (pagina) {
+            var v1 = pagina.getViewport({ scale: 1 }), d = misura(v1.width, v1.height, MISURE.l);
+            var v = pagina.getViewport({ scale: d[0] / v1.width }), c = document.createElement('canvas');
+            c.width = Math.round(v.width); c.height = Math.round(v.height);
+            var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+            return pagina.render({ canvasContext: x, viewport: v }).promise.then(function () { pagina.cleanup(); return c; });
+          });
+        });
+      })(p);
+      return f;
+    });
+  }
+  return Promise.resolve(file.map(function (f) {
+    return function () {
+      return createImageBitmap(f).then(function (bmp) {
+        var d = misura(bmp.width, bmp.height, MISURE.l), c = document.createElement('canvas');
+        c.width = d[0]; c.height = d[1];
+        var x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(bmp, 0, 0, d[0], d[1]); bmp.close && bmp.close();
+        return c;
+      });
+    };
+  }));
+}
+
+function nomeFile(i) { return (i + 1 < 10 ? '0' : '') + (i + 1) + '.jpg'; }
+function carica(percorso, blob, tipo) {
+  return db.storage.from('schermi').upload(percorso, blob, { contentType: tipo, upsert: true, cacheControl: '31536000' }).then(function (r) {
+    if (r.error) throw r.error;
+  });
+}
+
+$('avviaCarica').onclick = function () {
+  if (!file.length) return;
+  var titolo = $('nomeDeck').value.trim() || 'Presentazione';
+  var id = new Date().toISOString().replace(/[-:]/g, '').replace('T', '-').slice(0, 15) + '-' + Math.random().toString(36).slice(2, 6);
+  var cartella = 'presentazioni/' + id + '/', msg = $('msgCarica'), barra = $('avanzamento');
+  $('avviaCarica').disabled = true; barra.hidden = false; barra.value = 0; msg.className = 'messaggio';
+  var totale = 0;
+  pagine().then(function (f) {
+    totale = f.length; barra.max = totale;
+    var catena = Promise.resolve();
+    f.forEach(function (disegnaPagina, i) {
+      catena = catena.then(function () {
+        msg.textContent = 'Slide ' + (i + 1) + ' di ' + totale + ': preparo e carico…';
+        return disegnaPagina().then(function (grande) {
+          return Promise.all([jpeg(grande, 0.9), riduci(grande, MISURE.m, 0.88), riduci(grande, MISURE.t, 0.8)]).then(function (b) {
+            grande.width = grande.height = 0;           // libera la memoria (sui telefoni conta)
+            return Promise.all([
+              carica(cartella + 'l/' + nomeFile(i), b[0], 'image/jpeg'),
+              carica(cartella + 'm/' + nomeFile(i), b[1], 'image/jpeg'),
+              carica(cartella + 't/' + nomeFile(i), b[2], 'image/jpeg')
+            ]);
+          });
+        }).then(function () { barra.value = i + 1; });
+      });
+    });
+    return catena;
+  }).then(function () {
+    // l'elenco delle slide si scrive per ultimo: una presentazione senza info.json non è finita e non compare
+    var info = { id: id, titolo: titolo, n: totale, creata: new Date().toISOString() };
+    return carica(cartella + 'info.json', new Blob([JSON.stringify(info)], { type: 'application/json' }), 'application/json').then(function () { return info; });
+  }).then(function (info) {
+    msg.textContent = 'Fatto: «' + info.titolo + '», ' + info.n + ' slide. Ora puoi metterla in onda dall\'elenco qui sotto.';
+    file = []; $('file').value = ''; $('nomeDeck').value = ''; barra.hidden = true;
+    elenca();
+  }).catch(function (e) {
+    msg.className = 'messaggio errore';
+    var testo = (e && e.message) || String(e);
+    msg.textContent = /row-level|policy|Unauthorized|403/i.test(testo)
+      ? 'Questo utente non è autorizzato a caricare presentazioni.'
+      : 'Caricamento non riuscito: ' + testo + '. Riprova; se succede ancora, prova da un computer.';
+    $('avviaCarica').disabled = false; barra.hidden = true;
+  });
+};
+
+// ---------- elenco delle presentazioni caricate ----------
+var PROVA_DECK = { id: 'prova', titolo: 'Slide di prova (numerate)', n: 8, base: new URL('prova/', location.href).href };
+function voce(d) {
+  var v = document.createElement('div'); v.className = 'voce'; v.dataset.id = d.id;
+  v.innerHTML = '<img alt=""><div><div class="titolo"></div><div class="messaggio"></div></div><div class="azioni"><button class="primario onda">Metti in onda</button></div>';
+  v.querySelector('img').src = SLIDE.immagine(d, 't', 0);
+  v.querySelector('.titolo').textContent = d.titolo;
+  v.querySelector('.messaggio').textContent = d.n + ' slide' + (d.creata ? ' · caricata il ' + new Date(d.creata).toLocaleString('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+  v.querySelector('.onda').onclick = function () { mettiInOnda(d); };
+  if (d.id !== 'prova') {
+    var x = document.createElement('button'); x.className = 'pericolo'; x.textContent = 'Elimina';
+    x.onclick = function () { elimina(d, x); };
+    v.querySelector('.azioni').appendChild(x);
+  }
+  return v;
+}
+function segnaInOnda() {
+  var d = deck();
+  Array.prototype.forEach.call($('elenco').children, function (v) { v.classList.toggle('onda', !!d && v.dataset.id === d.id); });
+}
+function elenca() {
+  var el = $('elenco');
+  db.storage.from('schermi').list('presentazioni', { limit: 200, sortBy: { column: 'name', order: 'desc' } }).then(function (r) {
+    if (r.error) throw r.error;
+    var cartelle = (r.data || []).filter(function (o) { return !o.metadata; }).map(function (o) { return o.name; });
+    return Promise.all(cartelle.map(function (id) {
+      return fetch(PUBBLICO + 'presentazioni/' + id + '/info.json', { cache: 'no-store' }).then(function (x) { return x.ok ? x.json() : null; }).catch(function () { return null; });
+    }));
+  }).then(function (infos) {
+    el.innerHTML = '';
+    infos.filter(Boolean).forEach(function (info) {
+      info.base = PUBBLICO + 'presentazioni/' + info.id + '/';
+      el.appendChild(voce(info));
+    });
+    el.appendChild(voce(PROVA_DECK));
+    segnaInOnda();
+  }).catch(function () { el.innerHTML = '<div class="messaggio errore">Non riesco a leggere l\'elenco. Hai fatto l\'accesso con l\'utente giusto?</div>'; });
+}
+function elimina(d, bottone) {
+  if (deck() && deck().id === d.id) { bottone.textContent = 'È in onda'; setTimeout(function () { bottone.textContent = 'Elimina'; }, 2000); return; }
+  if (bottone.dataset.conferma !== '1') { bottone.dataset.conferma = '1'; bottone.textContent = 'Sicuro? Tocca di nuovo'; setTimeout(function () { bottone.dataset.conferma = ''; bottone.textContent = 'Elimina'; }, 4000); return; }
+  bottone.disabled = true; bottone.textContent = 'Elimino…';
+  var cartella = 'presentazioni/' + d.id + '/', percorsi = [cartella + 'info.json'];
+  for (var i = 0; i < d.n; i++) ['l', 'm', 't'].forEach(function (k) { percorsi.push(cartella + k + '/' + nomeFile(i)); });
+  db.storage.from('schermi').remove(percorsi).then(function (r) {
+    if (r.error) { bottone.disabled = false; bottone.textContent = 'Non riuscito'; return; }
+    elenca();
+  });
+}
+</script>
+</body>
+</html>

@@ -168,13 +168,18 @@ function sincronizza() {
 
 // ---------- regole comuni: quale slide va mostrata in un certo istante ----------
 // Lo stato lo decide il telecomando ed è uguale per tutti:
+//   deck: { id, n, base, titolo }          → la presentazione in onda: n slide, immagini sotto «base»
+//                                           (base + 'm/01.jpg' monitor, 'l/01.jpg' LEDwall, 't/01.jpg' miniature)
 //   modo 'mano': { slide, prima, quando }  → fino a «quando» si vede «prima», da «quando» si vede «slide»
 //   modo 'auto': { parti, inizio, durata } → dalla slide «parti», all'istante «inizio», una slide ogni «durata» secondi, in giro
 //   nero: true/false, con il suo «quando» (schermo nero, per le pause)
 // Ogni schermo calcola da sé: in automatico non serve nessun messaggio a ogni cambio, e se la rete cade per un
 // momento gli schermi continuano comunque insieme.
 var SLIDE = {
-  indice: function (st, n, t) {
+  numero: function (st) { return st && st.deck ? (st.deck.n | 0) : 0; },
+  immagine: function (deck, tipo, i) { return deck.base + tipo + '/' + (i + 1 < 10 ? '0' : '') + (i + 1) + '.jpg'; },
+  indice: function (st, t) {
+    var n = SLIDE.numero(st);
     if (!st || !n) return 0;
     if (st.modo === 'auto') {
       var passo = Math.floor((t - st.inizio) / (st.durata * 1000));
