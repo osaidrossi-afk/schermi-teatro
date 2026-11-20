@@ -23,6 +23,10 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 if (-not $Sito) { Write-Host 'Manca -Sito (l''indirizzo delle pagine degli schermi).' -ForegroundColor Red; exit 1 }
 $Sito = $Sito.TrimEnd('/')
+if (-not $PSBoundParameters.ContainsKey('Layer')) {
+  $risposta = Read-Host 'Su quale layer di Resolume sono le slide? (scrivi il numero e premi Invio; solo Invio = 1)'
+  if ($risposta -match '^\s*(\d+)\s*$') { $Layer = [int]$Matches[1] }
+}
 
 $BASE = 'tnfslide7q2m9/'
 if ($Canale) { $BASE = "tnfslide7q2m9-$Canale/" }
