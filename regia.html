@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111214">
+<title>Regia slide</title>
+<style>
+  :root {
+    --fondo: #111214; --pannello: #1b1d21; --bordo: #2c2f35; --testo: #eceae6; --tenue: #9a9ca3;
+    --oro: #c9a45c; --oro-scuro: #8a6d33; --verde: #3fb27f; --rosso: #e05a4f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--testo); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { padding: 12px 16px calc(24px + env(safe-area-inset-bottom)); max-width: 1100px; margin: 0 auto; touch-action: manipulation; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  h1 { font-size: 18px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  .stato { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .pill { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--pannello); border: 1px solid var(--bordo); color: var(--tenue); white-space: nowrap; }
+  .pill.ok { color: var(--verde); border-color: rgba(63,178,127,.4); }
+  .pill.ko { color: var(--rosso); border-color: rgba(224,90,79,.5); }
+
+  .anteprime { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .riquadro { background: var(--pannello); border: 1px solid var(--bordo); border-radius: 12px; padding: 10px; }
+  .etichetta { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--tenue); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .etichetta b { color: var(--testo); font-weight: 600; }
+  .immagine { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 8px; overflow: hidden; }
+  .immagine img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .immagine .velo { position: absolute; inset: 0; background: #000; display: none; align-items: center; justify-content: center; color: var(--tenue); font-size: 14px; }
+  .immagine .velo.su { display: flex; }
+  .in-onda { color: var(--rosso); font-weight: 700; }
+
+  .comandi { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 10px; margin: 12px 0; }
+  button { font: inherit; color: var(--testo); background: var(--pannello); border: 1px solid var(--bordo); border-radius: 12px; padding: 14px 10px; cursor: pointer; }
+  button:active { transform: scale(.98); }
+  button:focus-visible { outline: 2px solid var(--oro); outline-offset: 2px; }
+  .grande { font-size: 22px; font-weight: 700; padding: 22px 10px; }
+  .avanti { background: var(--oro); border-color: var(--oro); color: #1a1408; }
+  .nero-attivo { background: #000; border-color: var(--rosso); color: var(--rosso); }
+
+  .modo { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .segmenti { display: inline-flex; border: 1px solid var(--bordo); border-radius: 10px; overflow: hidden; }
+  .segmenti button { border: 0; border-radius: 0; padding: 10px 14px; background: transparent; }
+  .segmenti button.scelto { background: var(--oro-scuro); color: #fff; }
+  .modo label { color: var(--tenue); font-size: 14px; display: inline-flex; align-items: center; gap: 6px; }
+  .modo input { width: 72px; font: inherit; color: var(--testo); background: var(--fondo); border: 1px solid var(--bordo); border-radius: 8px; padding: 8px; }
+  .nota { color: var(--tenue); font-size: 13px; margin: 8px 0 0; }
+
+  .griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 12px; }
+  .miniatura { padding: 0; overflow: hidden; border-radius: 8px; position: relative; aspect-ratio: 16 / 9; background: #000; }
+  .miniatura img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .miniatura span { position: absolute; left: 6px; top: 4px; font-size: 12px; font-weight: 700; background: rgba(0,0,0,.6); padding: 1px 6px; border-radius: 6px; }
+  .miniatura.attuale { outline: 3px solid var(--rosso); outline-offset: -3px; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--tenue); font-size: 14px; }
+  @media (max-width: 640px) {
+    .anteprime { grid-template-columns: 1fr; }
+    .anteprime .riquadro:last-child { display: none; }   /* sul telefono basta quello in onda */
+    .grande { font-size: 20px; padding: 26px 8px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Regia slide</h1>
+  <div class="stato">
+    <span class="pill" id="rete">collegamento…</span>
+    <span class="pill" id="schermi">schermi: –</span>
+  </div>
+</header>
+
+<section class="anteprime">
+  <div class="riquadro">
+    <div class="etichetta"><span class="in-onda">● In onda</span><b id="numero">–</b></div>
+    <div class="immagine"><img id="ora" alt="Slide in onda"><div class="velo" id="velo">Schermi neri</div></div>
+  </div>
+  <div class="riquadro">
+    <div class="etichetta"><span>Prossima</span><b id="numeroDopo">–</b></div>
+    <div class="immagine"><img id="dopo" alt="Slide successiva"></div>
+  </div>
+</section>
+
+<section class="comandi">
+  <button class="grande" id="indietro" aria-label="Slide precedente">◀</button>
+  <button class="grande avanti" id="avanti">Avanti ▶</button>
+  <button class="grande" id="nero">Nero</button>
+</section>
+
+<section class="riquadro">
+  <div class="modo">
+    <div class="segmenti" role="group" aria-label="Modalità">
+      <button id="modoMano" class="scelto">A mano</button>
+      <button id="modoAuto">Automatico</button>
+    </div>
+    <label>secondi per slide <input id="durata" type="number" min="2" max="600" step="1" value="8"></label>
+  </div>
+  <p class="nota" id="spiega">A mano: ogni «Avanti» cambia la LEDwall e tutti i monitor insieme. Funzionano anche le frecce, la barra spaziatrice e il telecomando da presentazione.</p>
+</section>
+
+<details open>
+  <summary>Tutte le slide (tocca per andare a quella)</summary>
+  <div class="griglia" id="griglia"></div>
+</details>
+
+<script src="rete.js"></script>
+<script>
+// Telecomando: decide lo stato e lo manda a tutti. Gli schermi cambiano slide tutti nello stesso istante,
+// «anticipo» millisecondi dopo il tocco: il tempo perché il messaggio arrivi a tutti prima del cambio.
+var ANTICIPO = parseInt((location.search.match(/[?&]anticipo=(\d+)/) || [])[1] || '350', 10);
+var deck = null, stato = null, sveglia = null, schermi = {};
+var $ = function (id) { return document.getElementById(id); };
+
+function url(i) { return deck.slide[i] + '?v=' + encodeURIComponent(deck.versione); }
+function n() { return deck ? deck.slide.length : 0; }
+function adesso() { return SLIDE.indice(stato, n(), ora()); }
+
+function base() {           // lo stato di partenza per una modifica: quello attuale, con un numero di versione nuovo
+  var t = ora(), s = {};
+  if (stato) Object.keys(stato).forEach(function (k) { if (['id', 'da', 'argomento'].indexOf(k) < 0) s[k] = stato[k]; });
+  s.k = 'stato'; s.rev = t; s.versione = deck.versione;
+  if (!s.modo) { s.modo = 'mano'; s.slide = 0; s.prima = 0; s.quando = 0; }
+  return s;
+}
+function manda(s) { RETE.manda(s, 'stato', true); }
+
+function vai(i) {
+  if (!deck) return;
+  i = Math.max(0, Math.min(n() - 1, i));
+  var s = base(), t = s.rev, att = adesso();
+  delete s.inizio; delete s.durata; delete s.parti;
+  s.modo = 'mano'; s.prima = att; s.slide = i; s.quando = t + ANTICIPO;
+  manda(s);
+}
+function avanti() { vai(adesso() + 1); }
+function indietro() { vai(adesso() - 1); }
+
+function nero() {
+  if (!deck) return;
+  var s = base(), t = s.rev, era = SLIDE.nero(stato, t);
+  s.neroPrima = era; s.nero = !era; s.neroQuando = t + ANTICIPO;
+  manda(s);
+}
+
+function automatico() {
+  if (!deck) return;
+  var sec = Math.max(2, Math.min(600, parseInt($('durata').value, 10) || 8));
+  $('durata').value = sec;
+  var s = base(), t = s.rev, att = adesso();
+  s.modo = 'auto'; s.prima = att; s.parti = att; s.inizio = t + ANTICIPO; s.durata = sec;
+  manda(s);
+}
+function aMano() {         // ferma l'automatico sulla slide che si vede adesso
+  if (!stato || stato.modo !== 'auto') return;
+  vai(adesso());
+}
+
+// ---------- disegno ----------
+function disegna() {
+  clearTimeout(sveglia);
+  if (!deck) return;
+  var t = ora(), i = SLIDE.indice(stato, n(), t), dopo = Math.min(i + 1, n() - 1);
+  if ($('ora').dataset.i !== String(i)) { $('ora').src = url(i); $('ora').dataset.i = String(i); }
+  if ($('dopo').dataset.i !== String(dopo)) { $('dopo').src = url(dopo); $('dopo').dataset.i = String(dopo); }
+  $('numero').textContent = (i + 1) + ' / ' + n();
+  $('numeroDopo').textContent = (i + 1 < n()) ? (dopo + 1) + ' / ' + n() : 'fine';
+  var neroSu = SLIDE.nero(stato, t);
+  $('velo').classList.toggle('su', neroSu);
+  $('nero').classList.toggle('nero-attivo', neroSu);
+  $('nero').textContent = neroSu ? 'Riaccendi' : 'Nero';
+  var auto = stato && stato.modo === 'auto';
+  $('modoAuto').classList.toggle('scelto', !!auto);
+  $('modoMano').classList.toggle('scelto', !auto);
+  $('spiega').textContent = auto
+    ? 'Automatico: una slide ogni ' + stato.durata + ' secondi, in giro. Premi «Avanti», «◀» o una miniatura per riprendere il controllo a mano.'
+    : 'A mano: ogni «Avanti» cambia la LEDwall e tutti i monitor insieme. Funzionano anche le frecce, la barra spaziatrice e il telecomando da presentazione.';
+  if (auto && document.activeElement !== $('durata')) $('durata').value = stato.durata;
+  Array.prototype.forEach.call($('griglia').children, function (b, k) { b.classList.toggle('attuale', k === i); });
+  var p = SLIDE.prossimoCambio(stato, t);
+  if (p !== null) sveglia = setTimeout(disegna, Math.max(0, p - ora()));
+}
+
+function griglia() {
+  var g = $('griglia'); g.innerHTML = '';
+  deck.slide.forEach(function (s, i) {
+    var b = document.createElement('button');
+    b.className = 'miniatura'; b.setAttribute('aria-label', 'Vai alla slide ' + (i + 1));
+    b.innerHTML = '<img loading="lazy" alt=""><span>' + (i + 1) + '</span>';
+    b.querySelector('img').src = url(i);
+    b.onclick = function () { vai(i); };
+    g.appendChild(b);
+  });
+}
+
+function caricaDeck() {
+  return fetch('presentazione.json?s=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+    deck = d; griglia();
+    d.slide.forEach(function (s, i) { var im = new Image(); im.src = url(i); });
+  });
+}
+
+var chiesto = false;
+function aggiornaStato() {
+  var ok = RETE.collegato();
+  if (ok && !chiesto) chiesto = RETE.manda({ k: 'chi' }, 'vivo', false);   // appena collegati: chi è acceso?
+  $('rete').textContent = ok ? 'collegato' : 'non collegato';
+  $('rete').className = 'pill ' + (ok ? 'ok' : 'ko');
+  $('rete').title = RETE.server().join(' · ') + ' · orologio ' + Math.round(scarto) + ' ms';
+  var limite = Date.now() - 45000, quanti = 0;
+  Object.keys(schermi).forEach(function (k) { if (schermi[k] > limite) quanti++; else delete schermi[k]; });
+  $('schermi').textContent = 'schermi accesi: ' + quanti;
+}
+
+RETE.ascolta(function (m) {
+  if (m.k === 'vivo') { if (m.da !== RETE.ID) schermi[m.da] = Date.now(); return; }
+  if (m.k !== 'stato') return;
+  if (stato && m.rev <= stato.rev) return;
+  stato = m; disegna();
+});
+
+$('avanti').onclick = avanti;
+$('indietro').onclick = indietro;
+$('nero').onclick = nero;
+$('modoAuto').onclick = automatico;
+$('modoMano').onclick = aMano;
+$('durata').onchange = function () { if (stato && stato.modo === 'auto') automatico(); };
+
+document.addEventListener('keydown', function (e) {
+  if (e.target && e.target.tagName === 'INPUT') return;
+  var k = e.key;
+  if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter' || k === 'ArrowDown') { e.preventDefault(); avanti(); }
+  else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'ArrowUp' || k === 'Backspace') { e.preventDefault(); indietro(); }
+  else if (k === 'b' || k === 'B' || k === '.') { e.preventDefault(); nero(); }
+  else if (k === 'Home') { e.preventDefault(); vai(0); }
+  else if (k === 'End') { e.preventDefault(); vai(n() - 1); }
+});
+
+// il telefono non si spegne mentre si fa regia
+function tieniAcceso() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(function () {}); } catch (e) {} }
+document.addEventListener('visibilitychange', function () { if (!document.hidden) tieniAcceso(); });
+tieniAcceso();
+
+caricaDeck().then(function () {
+  disegna();
+  RETE.collega();
+  sincronizza().then(disegna);
+  setInterval(function () { sincronizza().then(disegna); }, 10 * 60 * 1000);
+});
+setInterval(aggiornaStato, 1000);
+</script>
+</body>
+</html>
